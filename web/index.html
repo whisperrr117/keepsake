@@ -118,8 +118,24 @@ body.opened .top,body.opened .tags,body.opened .hint,body.opened .knob{opacity:0
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script src="demo-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div id="login-screen" style="
+  position:fixed;inset:0;z-index:9999;
+  background:#f5f1eb;
+  display:flex;align-items:center;justify-content:center;
+  font-family:Arial,sans-serif;
+">
+  <div style="width: min(340px, 85vw);">
+    <h2 style="color:#594b40;font-weight:400;">The Little Moon House</h2>
+    <p style="color:#8b7d70;">Welcome home.</p>
+    <input id="login-email" type="email" placeholder="Email" style="width:100%;padding:12px;margin:8px 0;box-sizing:border-box;">
+    <input id="login-password" type="password" placeholder="Password" style="width:100%;padding:12px;margin:8px 0;box-sizing:border-box;">
+    <button id="login-button" style="width:100%;padding:12px;margin-top:12px;">Enter</button>
+    <p id="login-error" style="color:#a44;font-size:13px;"></p>
+  </div>
+</div>
 <div id="load">吹泡泡……</div>
 <canvas id="c"></canvas>
 <div class="top"><h1>封存</h1><span class="mono" id="count"></span></div>
@@ -144,6 +160,42 @@ const NAME={you:'你',ta:'Ta'};
 
 // ── 数据 ──
 // demo 里你写的东西只存在这台设备的浏览器里。接后端时，把 load/save 换成 /api/keepsakes 那几个接口（见 docs/01）。
+const SUPABASE_URL = 'https://gntjpewwpbnungellgjz.supabase.co';
+const SUPABASE_KEY = 'key sb_publishable_U_GdcCDk0czgeQPr9K5tRw_0JIqlQXW';
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const loginScreen = document.getElementById('login-screen');
+const loginButton = document.getElementById('login-button');
+const loginError = document.getElementById('login-error');
+
+const { data: sessionData } = await supabaseClient.auth.getSession();
+
+if (sessionData.session) {
+  loginScreen.style.display = 'none';
+}
+
+loginButton.addEventListener('click', async () => {
+  loginButton.disabled = true;
+  loginError.textContent = '';
+
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    loginError.textContent = error.message;
+    loginButton.disabled = false;
+  } else {
+    loginScreen.style.display = 'none';
+  }
+});
 const STORE='keepsake_demo_v1';
 let SAVED={};try{SAVED=JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){}
 const save=()=>{try{localStorage.setItem(STORE,JSON.stringify(SAVED))}catch(e){}};
